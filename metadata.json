@@ -1,0 +1,6 @@
+{
+  "name": "Calculadora de Custas Extrajudiciais PR",
+  "description": "Calculadora profissional de emolumentos e custas de escrituras baseada na tabela do estado do Paraná (VRC e Reais) com geração de relatório detalhado e exportação de PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
