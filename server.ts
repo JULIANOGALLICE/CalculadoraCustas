@@ -5,7 +5,7 @@ import fs from "fs/promises";
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3007;
 
   app.use(express.json());
 

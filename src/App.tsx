@@ -137,8 +137,10 @@ export default function App() {
   const [percentuaisFalecidos, setPercentuaisFalecidos] = useState<number[]>([100]);
   const [activeTab, setActiveTab] = useState<"itens" | "destinacao">("itens");
   const [isConfigExpanded, setIsConfigExpanded] = useState<boolean>(false);
-  const [configUnlocked, setConfigUnlocked] = useState<boolean>(false);
-  const [senhaConfig, setSenhaConfig] = useState<string>("");
+  const [configPasswordVerified, setConfigPasswordVerified] = useState<boolean>(false);
+  const [showConfigPasswordPrompt, setShowConfigPasswordPrompt] = useState<boolean>(false);
+  const [configPasswordInput, setConfigPasswordInput] = useState<string>("");
+  const [configPasswordError, setConfigPasswordError] = useState<string>("");
   const [exportingPdf, setExportingPdf] = useState<boolean>(false);
 
   // Estados do formulário de novo bem
@@ -303,7 +305,7 @@ export default function App() {
                     value={cliente.nome}
                     onChange={(e) => setCliente({ ...cliente, nome: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all font-medium"
-                    placeholder="Ex: Nome do Cliente"
+                    placeholder="Ex: Juliano Gallice"
                     id="input-cliente-nome"
                   />
                 </div>
@@ -351,7 +353,7 @@ export default function App() {
                     value={cliente.comarca}
                     onChange={(e) => setCliente({ ...cliente, comarca: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
-                    placeholder="Ex: Curitiba"
+                    placeholder="Ex: Londrina"
                     id="input-cliente-comarca"
                   />
                 </div>
@@ -1047,7 +1049,19 @@ export default function App() {
             {/* CARD 6: AJUSTES DA TABELA / ALÍQUOTAS (EXPANDÍVEL) */}
             <section className="bg-white rounded-none border border-slate-200 overflow-hidden no-print" id="card-config-aliquotas">
               <button
-                onClick={() => setIsConfigExpanded(!isConfigExpanded)}
+                onClick={() => {
+                  if (!isConfigExpanded) {
+                    if (!configPasswordVerified) {
+                      setShowConfigPasswordPrompt(true);
+                      setIsConfigExpanded(true);
+                    } else {
+                      setIsConfigExpanded(true);
+                    }
+                  } else {
+                    setIsConfigExpanded(false);
+                    setShowConfigPasswordPrompt(false);
+                  }
+                }}
                 className="w-full p-5 flex items-center justify-between text-left hover:bg-slate-50 transition-colors rounded-none cursor-pointer"
                 id="btn-expandir-config"
               >
@@ -1069,45 +1083,49 @@ export default function App() {
                     exit={{ height: 0 }}
                     className="overflow-hidden border-t border-slate-200"
                   >
-                    {!configUnlocked ? (
-                      <div className="p-6 bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
-                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Acesso Restrito</h3>
-                         <p className="text-xs text-slate-500 text-center max-w-sm">
-                            Digite a senha para acessar as configurações avançadas de alíquotas.
-                         </p>
-                         <div className="flex gap-2 w-full max-w-xs">
-                           <input
-                             type="password"
-                             value={senhaConfig}
-                             onChange={(e) => setSenhaConfig(e.target.value)}
-                             placeholder="Senha"
-                             className="w-full px-3 py-2 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 bg-white"
-                             onKeyDown={(e) => {
-                               if (e.key === 'Enter') {
-                                 if (senhaConfig === '@Def18441') {
-                                   setConfigUnlocked(true);
-                                   setSenhaConfig('');
-                                 } else {
-                                   alert('Senha incorreta!');
-                                 }
-                               }
-                             }}
-                           />
-                           <button
-                             type="button"
-                             onClick={() => {
-                               if (senhaConfig === '@Def18441') {
-                                 setConfigUnlocked(true);
-                                 setSenhaConfig('');
-                               } else {
-                                 alert('Senha incorreta!');
-                               }
-                             }}
-                             className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-bold rounded-none uppercase"
-                           >
-                             Acessar
-                           </button>
-                         </div>
+                    {showConfigPasswordPrompt ? (
+                      <div className="p-6 bg-slate-50/50 space-y-4">
+                        <div className="max-w-md mx-auto bg-white p-6 border border-slate-200 shadow-sm">
+                          <h3 className="text-sm font-bold text-slate-900 mb-2">Acesso Restrito</h3>
+                          <p className="text-xs text-slate-500 mb-4">Por favor, insira a senha para acessar as configurações avançadas.</p>
+                          <div className="space-y-3">
+                            <input
+                              type="password"
+                              value={configPasswordInput}
+                              onChange={(e) => setConfigPasswordInput(e.target.value)}
+                              placeholder="Senha de acesso"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-none font-mono focus:outline-hidden focus:border-slate-900 bg-white text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  if (configPasswordInput === '@Def18441') {
+                                    setConfigPasswordVerified(true);
+                                    setShowConfigPasswordPrompt(false);
+                                    setConfigPasswordError("");
+                                  } else {
+                                    setConfigPasswordError("Senha incorreta.");
+                                  }
+                                }
+                              }}
+                            />
+                            {configPasswordError && (
+                              <p className="text-[10px] text-red-600 font-bold">{configPasswordError}</p>
+                            )}
+                            <button
+                              onClick={() => {
+                                if (configPasswordInput === '@Def18441') {
+                                  setConfigPasswordVerified(true);
+                                  setShowConfigPasswordPrompt(false);
+                                  setConfigPasswordError("");
+                                } else {
+                                  setConfigPasswordError("Senha incorreta.");
+                                }
+                              }}
+                              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-none text-xs transition-colors"
+                            >
+                              Acessar Configurações
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                     <div className="p-6 bg-slate-50/50 space-y-4 text-xs">
