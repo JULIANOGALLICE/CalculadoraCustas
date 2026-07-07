@@ -37,24 +37,7 @@ import { gerarPdfCliente } from "./utils/pdfGenerator";
 
 export default function App() {
   // --- ESTADO ---
-  const [bens, setBens] = useState<BemCadastrado[]>([
-    {
-      id: "1",
-      nome: "Apartamento Residencial - Centro",
-      valor: 350000.00,
-      tipoAto: "valor",
-      matricula: "Matrícula 45.102 - 1º RI de Londrina",
-      observacoes: "Imóvel principal transacionado por compra e venda"
-    },
-    {
-      id: "2",
-      nome: "Chácara Recreativa - Recanto Verde",
-      valor: 120000.00,
-      tipoAto: "valor",
-      matricula: "Matrícula 12.304 - RI de Ibiporã",
-      observacoes: "Área de lazer inclusa na mesma escritura"
-    }
-  ]);
+  const [bens, setBens] = useState<BemCadastrado[]>([]);
 
   const [config, setConfig] = useState<ConfigCustas>(() => {
     try {
@@ -154,6 +137,8 @@ export default function App() {
   const [percentuaisFalecidos, setPercentuaisFalecidos] = useState<number[]>([100]);
   const [activeTab, setActiveTab] = useState<"itens" | "destinacao">("itens");
   const [isConfigExpanded, setIsConfigExpanded] = useState<boolean>(false);
+  const [configUnlocked, setConfigUnlocked] = useState<boolean>(false);
+  const [senhaConfig, setSenhaConfig] = useState<string>("");
   const [exportingPdf, setExportingPdf] = useState<boolean>(false);
 
   // Estados do formulário de novo bem
@@ -284,7 +269,7 @@ export default function App() {
             PR
           </div>
           <div>
-            <h1 className="text-sm sm:text-md font-bold tracking-tight uppercase">Tabelionato Digital</h1>
+            <h1 className="text-sm sm:text-md font-bold tracking-tight uppercase">Calculadora</h1>
             <p className="text-[10px] text-slate-400 font-mono">Calculadora de Custas Extrajudiciais - Paraná</p>
           </div>
         </div>
@@ -1084,6 +1069,47 @@ export default function App() {
                     exit={{ height: 0 }}
                     className="overflow-hidden border-t border-slate-200"
                   >
+                    {!configUnlocked ? (
+                      <div className="p-6 bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
+                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Acesso Restrito</h3>
+                         <p className="text-xs text-slate-500 text-center max-w-sm">
+                            Digite a senha para acessar as configurações avançadas de alíquotas.
+                         </p>
+                         <div className="flex gap-2 w-full max-w-xs">
+                           <input
+                             type="password"
+                             value={senhaConfig}
+                             onChange={(e) => setSenhaConfig(e.target.value)}
+                             placeholder="Senha"
+                             className="w-full px-3 py-2 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 bg-white"
+                             onKeyDown={(e) => {
+                               if (e.key === 'Enter') {
+                                 if (senhaConfig === '@Def18441') {
+                                   setConfigUnlocked(true);
+                                   setSenhaConfig('');
+                                 } else {
+                                   alert('Senha incorreta!');
+                                 }
+                               }
+                             }}
+                           />
+                           <button
+                             type="button"
+                             onClick={() => {
+                               if (senhaConfig === '@Def18441') {
+                                 setConfigUnlocked(true);
+                                 setSenhaConfig('');
+                               } else {
+                                 alert('Senha incorreta!');
+                               }
+                             }}
+                             className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-bold rounded-none uppercase"
+                           >
+                             Acessar
+                           </button>
+                         </div>
+                      </div>
+                    ) : (
                     <div className="p-6 bg-slate-50/50 space-y-4 text-xs">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* VRC Rate */}
@@ -1208,6 +1234,7 @@ export default function App() {
                         </button>
                       </div>
                     </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1220,7 +1247,7 @@ export default function App() {
       {/* --- FOOTER --- */}
       <footer className="bg-slate-900 border-t-2 border-slate-800 text-slate-450 py-8 text-center text-xs mt-12 no-print font-sans">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="uppercase tracking-wider font-bold text-white text-[10px]">Tabelionato Digital Paraná</p>
+          <p className="uppercase tracking-wider font-bold text-white text-[10px]">Calculadora Paraná</p>
           <p className="text-[10px] text-slate-500 mt-2">
             Esta calculadora é uma ferramenta independente de simulação e apoio estimativo. Os valores oficiais definitivos devem ser validados perante o respectivo Cartório / Tabelionato de Notas de acordo com as diretrizes do TJPR.
           </p>
