@@ -22,7 +22,8 @@ import {
   UserCheck,
   Users,
   RefreshCw,
-  HelpCircle
+  HelpCircle,
+  Pencil
 } from "lucide-react";
 
 import { BemCadastrado, ConfigCustas, ClienteDados } from "./types";
@@ -143,6 +144,8 @@ export default function App() {
   const [configPasswordError, setConfigPasswordError] = useState<string>("");
   const [exportingPdf, setExportingPdf] = useState<boolean>(false);
 
+  const [editandoBemId, setEditandoBemId] = useState<string | null>(null);
+
   // Estados do formulário de novo bem
   const [novoBemNome, setNovoBemNome] = useState<string>("");
   const [novoBemValor, setNovoBemValor] = useState<string>("");
@@ -196,7 +199,7 @@ export default function App() {
     const fracaoFunrejusNum = parseFloat(novoBemFracaoFunrejus) || 100;
 
     const novoBem: BemCadastrado = {
-      id: Date.now().toString(),
+      id: editandoBemId || Date.now().toString(),
       nome: novoBemNome.trim(),
       valor: novoBemTipoAto === "valor" ? valorNum : 0,
       tipoAto: novoBemTipoAto,
@@ -208,9 +211,41 @@ export default function App() {
       isGaragemAutonoma: novoBemTipoAto === "valor" ? novoBemIsGaragemAutonoma : undefined
     };
 
-    setBens([...bens, novoBem]);
+    if (editandoBemId) {
+      setBens(bens.map(b => b.id === editandoBemId ? novoBem : b));
+      setEditandoBemId(null);
+    } else {
+      setBens([...bens, novoBem]);
+    }
 
     // Limpar formulário de inserção
+    setNovoBemNome("");
+    setNovoBemValor("");
+    setNovoBemMatricula("");
+    setNovoBemObservacoes("");
+    setNovoBemCustomVrc("");
+    setNovoBemFracaoFunrejus("100");
+    setNovoBemIsGaragemAutonoma(false);
+  };
+
+  const iniciarEdicaoBem = (bem: BemCadastrado) => {
+    setEditandoBemId(bem.id);
+    setNovoBemNome(bem.nome);
+    setNovoBemValor(bem.valor > 0 ? bem.valor.toString() : ""); // Pode usar formatter dps
+    setNovoBemTipoAto(bem.tipoAto);
+    if (bem.atoFixoId) setNovoBemAtoFixoId(bem.atoFixoId);
+    if (bem.customVrc) setNovoBemCustomVrc(bem.customVrc.toString());
+    setNovoBemMatricula(bem.matricula || "");
+    setNovoBemObservacoes(bem.observacoes || "");
+    if (bem.fracaoFunrejus) setNovoBemFracaoFunrejus(bem.fracaoFunrejus.toString());
+    setNovoBemIsGaragemAutonoma(!!bem.isGaragemAutonoma);
+    
+    // Rolar para o formulário
+    document.getElementById("form-adicionar-bem")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const cancelarEdicaoBem = () => {
+    setEditandoBemId(null);
     setNovoBemNome("");
     setNovoBemValor("");
     setNovoBemMatricula("");
@@ -305,7 +340,7 @@ export default function App() {
                     value={cliente.nome}
                     onChange={(e) => setCliente({ ...cliente, nome: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all font-medium"
-                    placeholder="Ex: Juliano Gallice"
+                    placeholder="Digite o Nome do Cliente"
                     id="input-cliente-nome"
                   />
                 </div>
@@ -317,7 +352,7 @@ export default function App() {
                     value={cliente.cpfCnpj}
                     onChange={(e) => setCliente({ ...cliente, cpfCnpj: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all font-mono"
-                    placeholder="Ex: 123.456.789-00"
+                    placeholder="Digite o CPF do CLiente"
                     id="input-cliente-documento"
                   />
                 </div>
@@ -329,7 +364,7 @@ export default function App() {
                     value={cliente.telefone}
                     onChange={(e) => setCliente({ ...cliente, telefone: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
-                    placeholder="Ex: (41) 99999-8888"
+                    placeholder="Digite Telefone do Cliente"
                     id="input-cliente-telefone"
                   />
                 </div>
@@ -341,7 +376,7 @@ export default function App() {
                     value={cliente.email}
                     onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
-                    placeholder="Ex: cliente@email.com"
+                    placeholder="Digite o e-mail do Cliente"
                     id="input-cliente-email"
                   />
                 </div>
@@ -353,7 +388,7 @@ export default function App() {
                     value={cliente.comarca}
                     onChange={(e) => setCliente({ ...cliente, comarca: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
-                    placeholder="Ex: Londrina"
+                    placeholder=""
                     id="input-cliente-comarca"
                   />
                 </div>
@@ -365,7 +400,7 @@ export default function App() {
                     value={cliente.notarioNome}
                     onChange={(e) => setCliente({ ...cliente, notarioNome: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
-                    placeholder="Ex: Mariana Souza"
+                    placeholder=""
                     id="input-cliente-escrevente"
                   />
                 </div>
@@ -477,8 +512,8 @@ export default function App() {
             <section className="bg-white rounded-none border border-slate-200 p-6 shadow-xs" id="card-adicionar-bem">
               <div className="border-l-4 border-slate-900 pl-4 mb-5">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-600" />
-                  Cadastrar Bem ou Ato Notarial
+                  {editandoBemId ? <Pencil className="h-4 w-4 text-amber-600" /> : <FileText className="h-4 w-4 text-slate-600" />}
+                  {editandoBemId ? "Editar Bem ou Ato Notarial" : "Cadastrar Bem ou Ato Notarial"}
                 </h2>
               </div>
 
@@ -594,14 +629,35 @@ export default function App() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-none transition-colors flex items-center justify-center gap-2 border border-slate-900 cursor-pointer"
-                  id="btn-adicionar-bem"
-                >
-                  <Plus className="h-4 w-4 text-amber-400" />
-                  Incluir na Escritura
-                </button>
+                {editandoBemId ? (
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-none transition-colors flex items-center justify-center gap-2 border border-amber-600 cursor-pointer"
+                      id="btn-salvar-edicao"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Salvar Edição
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelarEdicaoBem}
+                      className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-none transition-colors flex items-center justify-center gap-2 border border-slate-300 cursor-pointer"
+                      id="btn-cancelar-edicao"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-none transition-colors flex items-center justify-center gap-2 border border-slate-900 cursor-pointer"
+                    id="btn-adicionar-bem"
+                  >
+                    <Plus className="h-4 w-4 text-amber-400" />
+                    Incluir na Escritura
+                  </button>
+                )}
               </form>
             </section>
 
@@ -671,14 +727,24 @@ export default function App() {
                             </div>
                           </div>
                           
-                          <button
-                            onClick={() => handleRemoverBem(b.id)}
-                            className="text-slate-400 hover:text-red-600 p-1 rounded-none hover:bg-red-50 transition-all shrink-0 cursor-pointer"
-                            title="Remover este bem"
-                            id={`btn-remover-bem-${b.id}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex flex-col gap-2 shrink-0">
+                            <button
+                              onClick={() => iniciarEdicaoBem(b)}
+                              className="text-slate-400 hover:text-amber-600 p-1 rounded-none hover:bg-amber-50 transition-all cursor-pointer"
+                              title="Editar este bem"
+                              id={`btn-editar-bem-${b.id}`}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleRemoverBem(b.id)}
+                              className="text-slate-400 hover:text-red-600 p-1 rounded-none hover:bg-red-50 transition-all cursor-pointer"
+                              title="Remover este bem"
+                              id={`btn-remover-bem-${b.id}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </motion.div>
                       );
                     })}
