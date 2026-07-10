@@ -2,8 +2,10 @@ export interface BemCadastrado {
   id: string;
   nome: string;
   valor: number; // Valor do bem em R$
-  tipoAto: "valor" | "fixo"; // Atos com valor progressivo ou taxas fixas
+  tipoAto: "valor" | "fixo" | "ata"; // Atos com valor progressivo, taxas fixas ou atas notariais
   atoFixoId?: string; // ID do ato fixo se aplicável
+  subtipoAta?: "interna" | "externa"; // Subtipo da Ata Notarial (interna/externa)
+  paginasAta?: number; // Quantidade de páginas da Ata Notarial
   customVrc?: number; // VRC customizado se "outros_custom" for selecionado
   matricula?: string; // Número de Matrícula ou Registro Imobiliário
   observacoes?: string; // Anotações extras
@@ -20,7 +22,9 @@ export interface ConfigCustas {
   tetoFunrejusReais: number; // Teto do FUNREJUS em R$ (atualmente 8.076,67)
   taxaSeloFixoReais: number; // Taxa de selo em R$
   taxaDistribReais: number; // Taxa de distribuição em R$ (Tabela XII)
-  tipoEscritura?: "compra_venda" | "inventario"; // Tipo de escritura principal
+  tipoEscritura?: "compra_venda" | "inventario" | "ata"; // Tipo de escritura principal
+  ataSubtipo?: "interna" | "externa"; // Subtipo da Ata Notarial (interna/externa) se o tipo principal for "ata"
+  ataPaginas?: number; // Quantidade de páginas da Ata Notarial se o tipo principal for "ata"
   quantidadeFalecidos?: number; // Quantidade de falecidos (óbito/inventariado)
   percentuaisFalecidos?: number[]; // Percentuais de transmissão por cada falecido (ex: [100, 50])
 }
@@ -42,6 +46,12 @@ export interface ResultadoItem {
   percentualEmolumentos?: number; // Ex: 100, 80, 50, ou 0
   regraAplicada?: string; // Ex: "Maior Valor (100%)", "Demais unidades (80%)", "Garagem autônoma (50%)", "Excedente isento (>9)"
   total: number;
+  selosDetalhes?: {
+    tn2Count: number;
+    tn2Value: number;
+    tn1Count: number;
+    tn1Value: number;
+  };
 }
 
 export interface ResultadoCalculo {
@@ -57,6 +67,12 @@ export interface ResultadoCalculo {
   somaSelos: number;
   somaDistrib: number;
   totalGeral: number;
+  selosDetalhes?: {
+    tn2Count: number;
+    tn2Value: number;
+    tn1Count: number;
+    tn1Value: number;
+  };
 }
 
 export interface ClienteDados {

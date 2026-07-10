@@ -16,6 +16,83 @@ export function calcularResultados(
 ): ResultadoCalculo {
   const itens: ResultadoItem[] = [];
 
+  if (config.tipoEscritura === "ata") {
+    const subtipo = config.ataSubtipo || "interna";
+    const paginas = config.ataPaginas || 1;
+
+    let emolumentosVrc = 0;
+    let funrejus = 0;
+    let tipoAtoNome = "";
+
+    if (subtipo === "interna") {
+      // 630 VRC para primeira pagina e mais 30 VRC para cada pagina adicional
+      emolumentosVrc = 630 + (paginas - 1) * 30;
+      // FUNREJUS é de 43,63 para primeira pagina e 2,08 a cada pagina adicional
+      funrejus = 43.63 + (paginas - 1) * 2.08;
+      tipoAtoNome = `Ata Notarial Interna (${paginas} fl.)`;
+    } else {
+      // 1260 VRC para primeira pagina e mais 30 VRC para cada pagina adicional
+      emolumentosVrc = 1260 + (paginas - 1) * 30;
+      // FUNREJUS é de 87,25 para primeira pagina e 2,08 a cada pagina adicional
+      funrejus = 87.25 + (paginas - 1) * 2.08;
+      tipoAtoNome = `Ata Notarial Externa (${paginas} fl.)`;
+    }
+
+    const emolumentosReais = Math.round(emolumentosVrc * config.vrcRate * 100) / 100;
+    const funarpen = 0;
+    const fadep = truncar2Decimais(emolumentosReais * (config.fadepPct / 100));
+    const iss = truncar2Decimais(emolumentosReais * (config.issPct / 100));
+
+    // Selo: 1 para escritura, 1 para o traslado de 8 reais cada e um selo de 1,00 a cada pagina adicional
+    const custoPorSelo = config.taxaSeloFixoReais / 2; // R$ 8,00 por padrão
+    const selo = (2 * custoPorSelo) + (paginas - 1) * 1.00;
+
+    // Distribuição normal no preço da tabela da escritura
+    const distrib = config.taxaDistribReais;
+
+    const total = emolumentosReais + funarpen + fadep + iss + funrejus + selo + distrib;
+
+    const selosDetalhes = {
+      tn2Count: 2,
+      tn2Value: custoPorSelo, // R$ 8,00 por padrão
+      tn1Count: paginas - 1,
+      tn1Value: 1.00
+    };
+
+    itens.push({
+      id: "ata_unica",
+      nome: "Ata Notarial",
+      tipoAtoNome,
+      valorImovel: 0,
+      emolumentosVrc,
+      emolumentosReais,
+      funarpen,
+      fadep,
+      iss,
+      funrejus,
+      selo,
+      distrib,
+      total,
+      selosDetalhes,
+    });
+
+    return {
+      itens,
+      vrcRate: config.vrcRate,
+      calculoIndividualizado: false,
+      somaEmolumentosVrc: emolumentosVrc,
+      somaEmolumentosReais: emolumentosReais,
+      somaFunarpen: funarpen,
+      somaFadep: fadep,
+      somaIss: iss,
+      somaFunrejus: funrejus,
+      somaSelos: selo,
+      somaDistrib: distrib,
+      totalGeral: total,
+      selosDetalhes,
+    };
+  }
+
   if (bens.length === 0) {
     return {
       itens: [],
@@ -33,9 +110,10 @@ export function calcularResultados(
     };
   }
 
-  // Separar bens com valor declaratório e atos fixos
+  // Separar bens com valor declaratório, atos fixos e atas notariais
   const bensComValor = bens.filter((b) => b.tipoAto === "valor");
   const atosFixos = bens.filter((b) => b.tipoAto === "fixo");
+  const atasNotariais = bens.filter((b) => b.tipoAto === "ata");
 
   // Se o cálculo for ESCRITURA ÚNICA (não-individualizado) para os bens com valor declaratório
   if (!calculoIndividualizado && bensComValor.length > 0) {
@@ -210,6 +288,61 @@ export function calcularResultados(
       nome: bem.nome,
       matricula: bem.matricula,
       valorImovel: bem.valor, // geralmente 0 para atos fixos, mas pode conter o valor cadastrado
+      tipoAtoNome,
+      emolumentosVrc,
+      emolumentosReais,
+      funarpen,
+      fadep,
+      iss,
+      funrejus,
+      selo,
+      distrib,
+      total,
+    });
+  });
+
+  // Atas Notariais são SEMPRE calculadas individualmente
+  atasNotariais.forEach((bem) => {
+    const subtipo = bem.subtipoAta || "interna";
+    const paginas = bem.paginasAta || 1;
+
+    let emolumentosVrc = 0;
+    let funrejus = 0;
+    let tipoAtoNome = "";
+
+    if (subtipo === "interna") {
+      // 630 VRC para primeira pagina e mais 30 VRC para cada pagina adicional
+      emolumentosVrc = 630 + (paginas - 1) * 30;
+      // FUNREJUS é de 43,63 para primeira pagina e 2,08 a cada pagina adicional
+      funrejus = 43.63 + (paginas - 1) * 2.08;
+      tipoAtoNome = `Ata Notarial Interna (${paginas} fl.)`;
+    } else {
+      // 1260 VRC para primeira pagina e mais 30 VRC para cada pagina adicional
+      emolumentosVrc = 1260 + (paginas - 1) * 30;
+      // FUNREJUS é de 87,25 para primeira pagina e 2,08 a cada pagina adicional
+      funrejus = 87.25 + (paginas - 1) * 2.08;
+      tipoAtoNome = `Ata Notarial Externa (${paginas} fl.)`;
+    }
+
+    const emolumentosReais = Math.round(emolumentosVrc * config.vrcRate * 100) / 100;
+    const funarpen = 0;
+    const fadep = truncar2Decimais(emolumentosReais * (config.fadepPct / 100));
+    const iss = truncar2Decimais(emolumentosReais * (config.issPct / 100));
+
+    // Selo: 1 para escritura, 1 para o traslado de 8 reais cada e um selo de 1,00 a cada pagina adicional
+    const custoPorSelo = config.taxaSeloFixoReais / 2; // R$ 8,00 por padrão
+    const selo = (2 * custoPorSelo) + (paginas - 1) * 1.00;
+
+    // Distribuição normal no preço da tabela da escritura
+    const distrib = config.taxaDistribReais;
+
+    const total = emolumentosReais + funarpen + fadep + iss + funrejus + selo + distrib;
+
+    itens.push({
+      id: bem.id,
+      nome: bem.nome,
+      matricula: bem.matricula,
+      valorImovel: bem.valor,
       tipoAtoNome,
       emolumentosVrc,
       emolumentosReais,

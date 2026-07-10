@@ -72,6 +72,7 @@ export function gerarPdfCliente(
   doc.setFillColor(248, 249, 250);
   doc.setDrawColor(220, 224, 230);
   const isInventario = config.tipoEscritura === "inventario";
+  const isAta = config.tipoEscritura === "ata";
   const numFalecidos = config.quantidadeFalecidos || 1;
   const rectHeight = 34; // standard size to accommodate extra info line nicely
   doc.rect(marginX, currentY, 180, rectHeight, "FD");
@@ -86,17 +87,38 @@ export function gerarPdfCliente(
   doc.text(`CPF/CNPJ: ${cliente.cpfCnpj || "Não informado"}`, marginX + 4, currentY + 12);
   doc.text(`Telefone: ${cliente.telefone || "Não informado"}`, marginX + 4, currentY + 18);
   doc.text(`E-mail: ${cliente.email || "Não informado"}`, marginX + 4, currentY + 24);
-  doc.text(`Tipo de Ato: ${isInventario ? "Inventário e Partilha (Sucessão)" : "Compra e Venda / Doação"}`, marginX + 4, currentY + 30);
+  
+  let tipoAtoTexto = "Compra e Venda / Doação";
+  if (isInventario) {
+    tipoAtoTexto = "Inventário e Partilha (Sucessão)";
+  } else if (isAta) {
+    tipoAtoTexto = "Ata Notarial";
+  }
+  doc.text(`Tipo de Ato: ${tipoAtoTexto}`, marginX + 4, currentY + 30);
 
   // Coluna 2
   doc.text(`Comarca/Município: ${cliente.comarca || "Paraná (Geral)"}`, marginX + colWidth, currentY + 6);
   doc.text(`Responsável: ${cliente.notarioNome || "Escrevente / Notário"}`, marginX + colWidth, currentY + 12);
   doc.text(`Data do Cálculo: ${new Date().toLocaleDateString("pt-BR")}`, marginX + colWidth, currentY + 18);
-  doc.text(`Modalidade: ${resultado.calculoIndividualizado ? "Escrituras Individuais" : "Escritura Única (Tab. XI, IV)"}`, marginX + colWidth, currentY + 24);
+  
+  let modalidadeTexto = resultado.calculoIndividualizado ? "Escrituras Individuais" : "Escritura Única (Tab. XI, IV)";
+  if (isAta) {
+    modalidadeTexto = "Ato Único Fixo";
+  }
+  doc.text(`Modalidade: ${modalidadeTexto}`, marginX + colWidth, currentY + 24);
+  
   if (isInventario) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(190, 110, 20); // Amber tone
     doc.text(`Óbitos (Falecidos): ${numFalecidos}`, marginX + colWidth, currentY + 30);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+  } else if (isAta) {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(190, 110, 20); // Amber tone
+    const subtipoAta = config.ataSubtipo || "interna";
+    const paginasAta = config.ataPaginas || 1;
+    doc.text(`Ata: ${subtipoAta === "interna" ? "Interna" : "Externa"} (${paginasAta} pág.)`, marginX + colWidth, currentY + 30);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(80, 80, 80);
   } else {
@@ -204,8 +226,14 @@ export function gerarPdfCliente(
   doc.text(`3. ISSQN (${config.issPct.toFixed(1)}% - Imposto Municipal Sobre Serviços):`, colValX1, currentY + 20);
   doc.text(formatarMoeda(resultado.somaIss), colValX2, currentY + 20);
 
-  const totalSelosNum = resultado.somaSelos > 0 ? Math.round(resultado.somaSelos / (config.taxaSeloFixoReais / 2)) : 0;
-  doc.text(`4. Selo Digital de Fiscalização (${totalSelosNum} ${totalSelosNum === 1 ? "Selo" : "Selos"} de R$ ${(config.taxaSeloFixoReais / 2).toFixed(2)}):`, colValX1, currentY + 27);
+  if (resultado.selosDetalhes) {
+    const det = resultado.selosDetalhes;
+    const descSelo = `4. Selo Digital de Fiscalização (${det.tn2Count} TN2 de R$ ${det.tn2Value.toFixed(2)}${det.tn1Count > 0 ? ` + ${det.tn1Count} TN1 de R$ ${det.tn1Value.toFixed(2)}` : ""}):`;
+    doc.text(descSelo, colValX1, currentY + 27);
+  } else {
+    const totalSelosNum = resultado.somaSelos > 0 ? Math.round(resultado.somaSelos / (config.taxaSeloFixoReais / 2)) : 0;
+    doc.text(`4. Selo Digital de Fiscalização (${totalSelosNum} ${totalSelosNum === 1 ? "Selo" : "Selos"} de R$ ${(config.taxaSeloFixoReais / 2).toFixed(2)}):`, colValX1, currentY + 27);
+  }
   doc.text(formatarMoeda(resultado.somaSelos), colValX2, currentY + 27);
 
   doc.text("5. Distribuição Judicial (Fixo por Ato Tabela XII):", colValX1, currentY + 34);

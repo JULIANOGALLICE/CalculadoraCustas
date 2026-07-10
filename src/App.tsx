@@ -133,9 +133,11 @@ export default function App() {
   });
 
   const [calculoIndividualizado, setCalculoIndividualizado] = useState<boolean>(false);
-  const [tipoEscritura, setTipoEscritura] = useState<"compra_venda" | "inventario">("compra_venda");
+  const [tipoEscritura, setTipoEscritura] = useState<"compra_venda" | "inventario" | "ata">("compra_venda");
   const [quantidadeFalecidos, setQuantidadeFalecidos] = useState<number>(1);
   const [percentuaisFalecidos, setPercentuaisFalecidos] = useState<number[]>([100]);
+  const [globalAtaSubtipo, setGlobalAtaSubtipo] = useState<"interna" | "externa">("interna");
+  const [globalAtaPaginas, setGlobalAtaPaginas] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<"itens" | "destinacao">("itens");
   const [isConfigExpanded, setIsConfigExpanded] = useState<boolean>(false);
   const [configPasswordVerified, setConfigPasswordVerified] = useState<boolean>(false);
@@ -149,7 +151,9 @@ export default function App() {
   // Estados do formulário de novo bem
   const [novoBemNome, setNovoBemNome] = useState<string>("");
   const [novoBemValor, setNovoBemValor] = useState<string>("");
-  const [novoBemTipoAto, setNovoBemTipoAto] = useState<"valor" | "fixo">("valor");
+  const [novoBemTipoAto, setNovoBemTipoAto] = useState<"valor" | "fixo" | "ata">("valor");
+  const [novoBemSubtipoAta, setNovoBemSubtipoAta] = useState<"interna" | "externa">("interna");
+  const [novoBemPaginasAta, setNovoBemPaginasAta] = useState<number>(1);
   const [novoBemAtoFixoId, setNovoBemAtoFixoId] = useState<string>("pacto");
   const [novoBemCustomVrc, setNovoBemCustomVrc] = useState<string>("");
   const [novoBemMatricula, setNovoBemMatricula] = useState<string>("");
@@ -160,15 +164,23 @@ export default function App() {
   // Estado para erros de formulário
   const [formErro, setFormErro] = useState<string>("");
 
+  React.useEffect(() => {
+    if (tipoEscritura === "compra_venda" || tipoEscritura === "inventario") {
+      setNovoBemTipoAto("valor");
+    }
+  }, [tipoEscritura]);
+
   // --- CÁLCULO DOS RESULTADOS ---
   const configComAto = useMemo(() => {
     return {
       ...config,
       tipoEscritura,
       quantidadeFalecidos,
-      percentuaisFalecidos
+      percentuaisFalecidos,
+      ataSubtipo: globalAtaSubtipo,
+      ataPaginas: globalAtaPaginas
     };
-  }, [config, tipoEscritura, quantidadeFalecidos, percentuaisFalecidos]);
+  }, [config, tipoEscritura, quantidadeFalecidos, percentuaisFalecidos, globalAtaSubtipo, globalAtaPaginas]);
 
   const resultado = useMemo(() => {
     return calcularResultados(bens, configComAto, calculoIndividualizado);
@@ -207,6 +219,8 @@ export default function App() {
       observacoes: novoBemObservacoes.trim() || undefined,
       atoFixoId: novoBemTipoAto === "fixo" ? novoBemAtoFixoId : undefined,
       customVrc: novoBemTipoAto === "fixo" && novoBemAtoFixoId === "outros_custom" ? customVrcNum : undefined,
+      subtipoAta: novoBemTipoAto === "ata" ? novoBemSubtipoAta : undefined,
+      paginasAta: novoBemTipoAto === "ata" ? novoBemPaginasAta : undefined,
       fracaoFunrejus: novoBemTipoAto === "valor" ? fracaoFunrejusNum : undefined,
       isGaragemAutonoma: novoBemTipoAto === "valor" ? novoBemIsGaragemAutonoma : undefined
     };
@@ -226,6 +240,8 @@ export default function App() {
     setNovoBemCustomVrc("");
     setNovoBemFracaoFunrejus("100");
     setNovoBemIsGaragemAutonoma(false);
+    setNovoBemSubtipoAta("interna");
+    setNovoBemPaginasAta(1);
   };
 
   const iniciarEdicaoBem = (bem: BemCadastrado) => {
@@ -235,6 +251,8 @@ export default function App() {
     setNovoBemTipoAto(bem.tipoAto);
     if (bem.atoFixoId) setNovoBemAtoFixoId(bem.atoFixoId);
     if (bem.customVrc) setNovoBemCustomVrc(bem.customVrc.toString());
+    if (bem.subtipoAta) setNovoBemSubtipoAta(bem.subtipoAta);
+    if (bem.paginasAta) setNovoBemPaginasAta(bem.paginasAta);
     setNovoBemMatricula(bem.matricula || "");
     setNovoBemObservacoes(bem.observacoes || "");
     if (bem.fracaoFunrejus) setNovoBemFracaoFunrejus(bem.fracaoFunrejus.toString());
@@ -253,6 +271,8 @@ export default function App() {
     setNovoBemCustomVrc("");
     setNovoBemFracaoFunrejus("100");
     setNovoBemIsGaragemAutonoma(false);
+    setNovoBemSubtipoAta("interna");
+    setNovoBemPaginasAta(1);
   };
 
   const handleRemoverBem = (id: string) => {
@@ -418,13 +438,13 @@ export default function App() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Escritura Pública</label>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Ato / Escritura Pública</label>
                   <select
                     value={tipoEscritura}
                     onChange={(e) => {
-                      const val = e.target.value as "compra_venda" | "inventario";
+                      const val = e.target.value as "compra_venda" | "inventario" | "ata";
                       setTipoEscritura(val);
-                      if (val === "compra_venda") {
+                      if (val === "compra_venda" || val === "ata") {
                         setQuantidadeFalecidos(1);
                       }
                     }}
@@ -433,8 +453,80 @@ export default function App() {
                   >
                     <option value="compra_venda">Escritura de Compra e Venda / Doação (Onerosa)</option>
                     <option value="inventario">Escritura de Inventário e Partilha (Sucessão Causa Mortis)</option>
+                    <option value="ata">Ata Notarial</option>
                   </select>
                 </div>
+
+                {tipoEscritura === "ata" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="p-4 bg-amber-50/50 border border-amber-200/70 space-y-4"
+                  >
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                      <FileText className="h-4 w-4 shrink-0" />
+                      Configuração da Ata Notarial
+                    </div>
+                    
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Subtipo da Ata Notarial</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setGlobalAtaSubtipo("interna")}
+                          className={`py-2 px-3 text-[10px] font-bold uppercase tracking-wider transition-all rounded-none cursor-pointer border text-center ${
+                            globalAtaSubtipo === "interna"
+                              ? "bg-slate-900 border-slate-900 text-white"
+                              : "bg-white border-slate-200 text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                          }`}
+                        >
+                          Interna (Sem Deslocamento)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGlobalAtaSubtipo("externa")}
+                          className={`py-2 px-3 text-[10px] font-bold uppercase tracking-wider transition-all rounded-none cursor-pointer border text-center ${
+                            globalAtaSubtipo === "externa"
+                              ? "bg-slate-900 border-slate-900 text-white"
+                              : "bg-white border-slate-200 text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                          }`}
+                        >
+                          Externa (Com Deslocamento)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantidade de Páginas / Folhas</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={globalAtaPaginas}
+                        onChange={(e) => setGlobalAtaPaginas(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all text-slate-900"
+                        id="input-global-ata-paginas"
+                      />
+                      <p className="text-[10px] text-slate-600 mt-2 font-mono leading-relaxed bg-white p-2.5 border border-slate-200">
+                        {globalAtaSubtipo === "interna" ? (
+                          <span>
+                            <strong>Ata Interna:</strong> 630 VRC na 1ª página (~ {formatarMoeda(630 * config.vrcRate)}) + 30 VRC (~ {formatarMoeda(30 * config.vrcRate)}) por página adicional.<br />
+                            <strong>FUNREJUS:</strong> R$ 43,63 na 1ª página + R$ 2,08 por página adicional.
+                          </span>
+                        ) : (
+                          <span>
+                            <strong>Ata Externa:</strong> 1260 VRC na 1ª página (~ {formatarMoeda(1260 * config.vrcRate)}) + 30 VRC (~ {formatarMoeda(30 * config.vrcRate)}) por página adicional.<br />
+                            <strong>FUNREJUS:</strong> R$ 87,25 na 1ª página + R$ 2,08 por página adicional.
+                          </span>
+                        )}
+                        <br />
+                        <span className="text-[9px] text-slate-400">
+                          * Selos: R$ 8,00 (Ata) + R$ 8,00 (Traslado) + R$ 1,00 por página adicional. Distribuição: R$ {config.taxaDistribReais.toFixed(2)}. ISS: {config.issPct}%. FADEP: {config.fadepPct}%.
+                        </span>
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
 
                 {tipoEscritura === "inventario" && (
                   <motion.div
@@ -508,8 +600,10 @@ export default function App() {
               </div>
             </section>
 
-            {/* CARD 2: ADICIONAR NOVO BEM / ATO */}
-            <section className="bg-white rounded-none border border-slate-200 p-6 shadow-xs" id="card-adicionar-bem">
+            {tipoEscritura !== "ata" && (
+              <>
+                {/* CARD 2: ADICIONAR NOVO BEM / ATO */}
+                <section className="bg-white rounded-none border border-slate-200 p-6 shadow-xs" id="card-adicionar-bem">
               <div className="border-l-4 border-slate-900 pl-4 mb-5">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
                   {editandoBemId ? <Pencil className="h-4 w-4 text-amber-600" /> : <FileText className="h-4 w-4 text-slate-600" />}
@@ -531,68 +625,217 @@ export default function App() {
                   />
                 </div>
 
+                {/* Seleção do Tipo de Ato (Abas de Categoria) */}
+                {tipoEscritura !== "compra_venda" && tipoEscritura !== "inventario" && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tipo de Ato / Enquadramento</label>
+                    <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setNovoBemTipoAto("valor")}
+                        className={`py-2 text-[10px] font-bold uppercase tracking-wider transition-all rounded-none cursor-pointer text-center ${
+                          novoBemTipoAto === "valor"
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                        }`}
+                      >
+                        Imóvel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNovoBemTipoAto("ata")}
+                        className={`py-2 text-[10px] font-bold uppercase tracking-wider transition-all rounded-none cursor-pointer text-center ${
+                          novoBemTipoAto === "ata"
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                        }`}
+                      >
+                        Ata Notarial
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNovoBemTipoAto("fixo")}
+                        className={`py-2 text-[10px] font-bold uppercase tracking-wider transition-all rounded-none cursor-pointer text-center ${
+                          novoBemTipoAto === "fixo"
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                        }`}
+                      >
+                        Ato Fixo
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor do Imóvel (R$)</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-slate-400 text-sm font-mono font-bold">R$</span>
+                  {/* --- CAMPOS PARA ESCRITURA DE IMÓVEL (VALOR DECLARATÓRIO) --- */}
+                  {novoBemTipoAto === "valor" && (
+                    <div className="space-y-3 animate-fadeIn">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor do Imóvel (R$)</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-slate-400 text-sm font-mono font-bold">R$</span>
+                          </div>
+                          <input
+                            type="text"
+                            value={novoBemValor}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9,.]/g, "");
+                              setNovoBemValor(val);
+                            }}
+                            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
+                            placeholder="Ex: 250.000,00"
+                            id="input-bem-valor"
+                          />
+                        </div>
+                        {/* Exibe o VRC estimado em tempo real */}
+                        {vrcEstimadoNovoBem !== null && vrcEstimadoNovoBem > 0 && (
+                          <p className="text-[10px] text-slate-600 mt-1.5 flex items-center gap-1.5 bg-amber-50/50 p-2 border border-amber-100 font-mono">
+                            <Info className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                            <span>Enquadramento: <strong>{vrcEstimadoNovoBem.toFixed(2)} VRC</strong> (~ {formatarMoeda(vrcEstimadoNovoBem * config.vrcRate)})</span>
+                          </p>
+                        )}
                       </div>
-                      <input
-                        type="text"
-                        value={novoBemValor}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9,.]/g, "");
-                          setNovoBemValor(val);
-                        }}
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
-                        placeholder="Ex: 250.000,00"
-                        id="input-bem-valor"
-                      />
-                    </div>
-                    {/* Exibe o VRC estimado em tempo real */}
-                    {vrcEstimadoNovoBem !== null && vrcEstimadoNovoBem > 0 && (
-                      <p className="text-[10px] text-slate-600 mt-1.5 flex items-center gap-1.5 bg-amber-50/50 p-2 border border-amber-100 font-mono">
-                        <Info className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                        <span>Enquadramento: <strong>{vrcEstimadoNovoBem.toFixed(2)} VRC</strong> (~ {formatarMoeda(vrcEstimadoNovoBem * config.vrcRate)})</span>
-                      </p>
-                    )}
-                  </div>
 
-                  {/* Vaga de Garagem Autônoma Checkbox */}
-                  <div className="flex items-start gap-2.5 p-3.5 bg-slate-50 border border-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={novoBemIsGaragemAutonoma}
-                      onChange={(e) => setNovoBemIsGaragemAutonoma(e.target.checked)}
-                      className="mt-0.5 rounded-none border-slate-300 text-slate-900 focus:ring-slate-900 h-4 w-4 cursor-pointer"
-                      id="checkbox-garagem-autonoma"
-                    />
-                    <div>
-                      <label htmlFor="checkbox-garagem-autonoma" className="block text-xs font-bold text-slate-900 cursor-pointer select-none">
-                        Vaga de Garagem Autônoma (Tabela XI, IV, c)
-                      </label>
-                      <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                        Cobrança reduzida para <strong>50%</strong> do valor da faixa, se for unidade de garagem com matrícula própria vinculada ao apartamento.
-                      </p>
-                    </div>
-                  </div>
+                      {/* Vaga de Garagem Autônoma Checkbox */}
+                      <div className="flex items-start gap-2.5 p-3.5 bg-slate-50 border border-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={novoBemIsGaragemAutonoma}
+                          onChange={(e) => setNovoBemIsGaragemAutonoma(e.target.checked)}
+                          className="mt-0.5 rounded-none border-slate-300 text-slate-900 focus:ring-slate-900 h-4 w-4 cursor-pointer"
+                          id="checkbox-garagem-autonoma"
+                        />
+                        <div>
+                          <label htmlFor="checkbox-garagem-autonoma" className="block text-xs font-bold text-slate-900 cursor-pointer select-none">
+                            Vaga de Garagem Autônoma (Tabela XI, IV, c)
+                          </label>
+                          <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                            Cobrança reduzida para <strong>50%</strong> do valor da faixa, se for unidade de garagem com matrícula própria vinculada ao apartamento.
+                          </p>
+                        </div>
+                      </div>
 
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fração do Imóvel para FUNREJUS (%)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="any"
-                      value={novoBemFracaoFunrejus}
-                      onChange={(e) => setNovoBemFracaoFunrejus(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
-                      placeholder="Ex: 100"
-                      id="input-bem-fracao-funrejus"
-                    />
-                    <p className="text-[9px] text-slate-400 mt-0.5 font-mono">Padrão: 100% (ex: 50% se a transferência for da metade ideal, reduzindo a base do FUNREJUS).</p>
-                  </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fração do Imóvel para FUNREJUS (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="any"
+                          value={novoBemFracaoFunrejus}
+                          onChange={(e) => setNovoBemFracaoFunrejus(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
+                          placeholder="Ex: 100"
+                          id="input-bem-fracao-funrejus"
+                        />
+                        <p className="text-[9px] text-slate-400 mt-0.5 font-mono">Padrão: 100% (ex: 50% se a transferência for da metade ideal, reduzindo a base do FUNREJUS).</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- CAMPOS PARA ATA NOTARIAL --- */}
+                  {novoBemTipoAto === "ata" && (
+                    <div className="space-y-3 animate-fadeIn">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Subtipo da Ata Notarial</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setNovoBemSubtipoAta("interna")}
+                            className={`py-2 px-3 text-[10px] font-bold uppercase tracking-wider transition-all rounded-none cursor-pointer border text-center ${
+                              novoBemSubtipoAta === "interna"
+                                ? "bg-slate-900 border-slate-900 text-white"
+                                : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                            }`}
+                          >
+                            Interna (Sem Deslocamento)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNovoBemSubtipoAta("externa")}
+                            className={`py-2 px-3 text-[10px] font-bold uppercase tracking-wider transition-all rounded-none cursor-pointer border text-center ${
+                              novoBemSubtipoAta === "externa"
+                                ? "bg-slate-900 border-slate-900 text-white"
+                                : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                            }`}
+                          >
+                            Externa (Com Deslocamento)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantidade de Páginas / Folhas</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={novoBemPaginasAta}
+                          onChange={(e) => setNovoBemPaginasAta(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
+                          id="input-ata-paginas"
+                        />
+                        <p className="text-[10px] text-slate-600 mt-2 font-mono leading-relaxed bg-amber-50/50 p-2.5 border border-amber-100/70">
+                          {novoBemSubtipoAta === "interna" ? (
+                            <span>
+                              <strong>Ata Interna:</strong> 630 VRC na 1ª página (~ {formatarMoeda(630 * config.vrcRate)}) + 30 VRC (~ {formatarMoeda(30 * config.vrcRate)}) por página adicional.<br />
+                              <strong>FUNREJUS:</strong> R$ 43,63 na 1ª página + R$ 2,08 por página adicional.
+                            </span>
+                          ) : (
+                            <span>
+                              <strong>Ata Externa:</strong> 1260 VRC na 1ª página (~ {formatarMoeda(1260 * config.vrcRate)}) + 30 VRC (~ {formatarMoeda(30 * config.vrcRate)}) por página adicional.<br />
+                              <strong>FUNREJUS:</strong> R$ 87,25 na 1ª página + R$ 2,08 por página adicional.
+                            </span>
+                          )}
+                          <br />
+                          <span className="text-[9px] text-slate-400">
+                            * Selos: R$ 8,00 (Ata) + R$ 8,00 (Traslado) + R$ 1,00 por página adicional. Distribuição: R$ {config.taxaDistribReais.toFixed(2)}. ISS: {config.issPct}%. FADEP: {config.fadepPct}%.
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- CAMPOS PARA ATO FIXO --- */}
+                  {novoBemTipoAto === "fixo" && (
+                    <div className="space-y-3 animate-fadeIn">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Selecione o Ato Fixo</label>
+                        <select
+                          value={novoBemAtoFixoId}
+                          onChange={(e) => setNovoBemAtoFixoId(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-semibold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all text-slate-800"
+                          id="select-ato-fixo"
+                        >
+                          {ATOS_FIXOS_PR.map((ato) => (
+                            <option key={ato.id} value={ato.id}>
+                              {ato.nome} ({ato.id === "outros_custom" ? "Customizado" : `${ato.vrc.toFixed(2)} VRC`})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-slate-500 mt-1 font-mono">
+                          {ATOS_FIXOS_PR.find(a => a.id === novoBemAtoFixoId)?.descricao}
+                        </p>
+                      </div>
+
+                      {novoBemAtoFixoId === "outros_custom" && (
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor Customizado em VRC</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={novoBemCustomVrc}
+                            onChange={(e) => setNovoBemCustomVrc(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
+                            placeholder="Ex: 150"
+                            id="input-custom-vrc"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Campos secundários opcionais */}
@@ -691,9 +934,11 @@ export default function App() {
                     {bens.map((b) => {
                       const vrcCalculado = b.tipoAto === "valor" 
                         ? calcularVrcEscrituraValor(b.valor) 
-                        : b.atoFixoId === "outros_custom" 
-                          ? (b.customVrc || 0) 
-                          : (ATOS_FIXOS_PR.find(a => a.id === b.atoFixoId)?.vrc || 0);
+                        : b.tipoAto === "ata"
+                          ? (b.subtipoAta === "interna" ? 630 : 1260) + ((b.paginasAta || 1) - 1) * 30
+                          : b.atoFixoId === "outros_custom" 
+                            ? (b.customVrc || 0) 
+                            : (ATOS_FIXOS_PR.find(a => a.id === b.atoFixoId)?.vrc || 0);
 
                       return (
                         <motion.div
@@ -707,7 +952,12 @@ export default function App() {
                           <div className="min-w-0">
                             <h3 className="text-xs font-bold text-slate-950 truncate">{b.nome}</h3>
                             <p className="text-[10px] text-slate-500 font-medium mt-0.5 font-mono uppercase tracking-wider">
-                              {b.tipoAto === "valor" ? "Valor Declaratório" : "Ato Fixo"} 
+                              {b.tipoAto === "valor" 
+                                ? "Valor Declaratório" 
+                                : b.tipoAto === "ata" 
+                                  ? `Ata Notarial (${b.subtipoAta === "interna" ? "Interna" : "Externa"})` 
+                                  : "Ato Fixo"} 
+                              {b.tipoAto === "ata" && ` | ${b.paginasAta || 1} pág.`}
                               {b.isGaragemAutonoma ? " | Vaga de Garagem Autônoma" : ""}
                               {b.fracaoFunrejus !== undefined && b.fracaoFunrejus !== 100 ? ` | Fração FUNREJUS: ${b.fracaoFunrejus}%` : ""}
                               {b.matricula ? ` | Mat: ${b.matricula}` : ""}
@@ -752,6 +1002,8 @@ export default function App() {
                 </div>
               )}
             </section>
+          </>
+        )}
           </div>
 
           {/* ================= COLUNA DIREITA: MEMORANDO E RESULTADO (7/12 cols) ================= */}
@@ -770,32 +1022,34 @@ export default function App() {
                   </div>
 
                   {/* Toggle de Categoria de Cálculo */}
-                  <div className="flex items-center gap-px bg-slate-800 p-0.5 rounded-none border border-slate-700 self-start sm:self-auto">
-                    <button
-                      onClick={() => setCalculoIndividualizado(false)}
-                      className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer ${
-                        !calculoIndividualizado 
-                          ? "bg-amber-500 text-slate-950" 
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                      title="Escritura Única (Tabela XI, Item IV): Maior valor integral (100%), demais 80% (limite 9) e garagens autônomas 50%."
-                      id="btn-calculo-unificado"
-                    >
-                      Escritura Única (Tab. XI, IV)
-                    </button>
-                    <button
-                      onClick={() => setCalculoIndividualizado(true)}
-                      className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer ${
-                        calculoIndividualizado 
-                          ? "bg-amber-500 text-slate-950" 
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                      title="Escrituras Individuais: Cada imóvel gera uma escritura individual cheia (100%)."
-                      id="btn-calculo-individualizado"
-                    >
-                      Escrituras Individuais
-                    </button>
-                  </div>
+                  {tipoEscritura !== "ata" && (
+                    <div className="flex items-center gap-px bg-slate-800 p-0.5 rounded-none border border-slate-700 self-start sm:self-auto">
+                      <button
+                        onClick={() => setCalculoIndividualizado(false)}
+                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer ${
+                          !calculoIndividualizado 
+                            ? "bg-amber-500 text-slate-950" 
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                        title="Escritura Única (Tabela XI, Item IV): Maior valor integral (100%), demais 80% (limite 9) e garagens autônomas 50%."
+                        id="btn-calculo-unificado"
+                      >
+                        Escritura Única (Tab. XI, IV)
+                      </button>
+                      <button
+                        onClick={() => setCalculoIndividualizado(true)}
+                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer ${
+                          calculoIndividualizado 
+                            ? "bg-amber-500 text-slate-950" 
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                        title="Escrituras Individuais: Cada imóvel gera uma escritura individual cheia (100%)."
+                        id="btn-calculo-individualizado"
+                      >
+                        Escrituras Individuais
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -839,7 +1093,7 @@ export default function App() {
                 <div className="flex flex-col gap-2 w-full sm:w-auto no-print">
                   <button
                     onClick={handleExportarPDF}
-                    disabled={exportingPdf || bens.length === 0}
+                    disabled={exportingPdf || (tipoEscritura !== "ata" && bens.length === 0)}
                     className={`w-full sm:w-auto bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 disabled:border-slate-800 text-slate-950 font-bold text-xs py-3 px-5 rounded-none shadow-md transition-colors flex items-center justify-center gap-2 border border-amber-600 uppercase tracking-wider cursor-pointer`}
                     id="btn-exportar-pdf"
                   >
@@ -858,7 +1112,7 @@ export default function App() {
 
                   <button
                     onClick={handleImprimir}
-                    disabled={bens.length === 0}
+                    disabled={tipoEscritura !== "ata" && bens.length === 0}
                     className="w-full sm:w-auto bg-slate-800 hover:bg-slate-750 disabled:opacity-50 text-slate-200 font-bold text-xs py-2.5 px-4 rounded-none border border-slate-700 transition-colors flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
                     id="btn-imprimir-relatorio"
                   >
@@ -981,7 +1235,16 @@ export default function App() {
                                 {formatarMoeda(item.selo)}
                                 {item.selo > 0 && (
                                   <span className="text-[9px] text-slate-400 font-normal ml-1">
-                                    ({Math.round(item.selo / (config.taxaSeloFixoReais / 2))} {Math.round(item.selo / (config.taxaSeloFixoReais / 2)) === 1 ? "selo" : "selos"})
+                                    {item.selosDetalhes ? (
+                                      <span>
+                                        ({item.selosDetalhes.tn2Count}x TN2 R$ {item.selosDetalhes.tn2Value.toFixed(2)}
+                                        {item.selosDetalhes.tn1Count > 0 ? ` + ${item.selosDetalhes.tn1Count}x TN1 R$ ${item.selosDetalhes.tn1Value.toFixed(2)}` : ""})
+                                      </span>
+                                    ) : (
+                                      <span>
+                                        ({Math.round(item.selo / (config.taxaSeloFixoReais / 2))} {Math.round(item.selo / (config.taxaSeloFixoReais / 2)) === 1 ? "selo" : "selos"})
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                               </span>
@@ -994,7 +1257,7 @@ export default function App() {
                               <div className="col-span-2 sm:col-span-3 bg-amber-50/60 p-3 rounded-none border border-amber-200 flex items-center justify-between text-xs mt-2 font-mono">
                                 <span className="text-amber-800 font-bold flex items-center gap-1 text-[10px] uppercase tracking-wider">
                                   <Info className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                                  FUNREJUS ({config.funrejusPct}%):
+                                  {item.tipoAtoNome.includes("Ata Notarial") ? "FUNREJUS:" : `FUNREJUS (${config.funrejusPct}%):`}
                                 </span>
                                 <span className="font-extrabold text-amber-900 font-mono">{formatarMoeda(item.funrejus)}</span>
                               </div>
@@ -1071,7 +1334,16 @@ export default function App() {
                           <div>
                             <span className="text-xs font-bold text-slate-800 block uppercase tracking-wide">Selos Digitais de Fiscalização</span>
                             <span className="text-[10px] text-slate-400 block font-mono font-sans">
-                              Taxa do Tribunal de Justiça ({resultado.somaSelos > 0 ? `${Math.round(resultado.somaSelos / (config.taxaSeloFixoReais / 2))} selos de R$ ${(config.taxaSeloFixoReais / 2).toFixed(2)}` : "sem selos"})
+                              {resultado.selosDetalhes ? (
+                                <span>
+                                  Taxa TJPR ({resultado.selosDetalhes.tn2Count}x TN2 de R$ {resultado.selosDetalhes.tn2Value.toFixed(2)}
+                                  {resultado.selosDetalhes.tn1Count > 0 ? ` + ${resultado.selosDetalhes.tn1Count}x TN1 de R$ ${resultado.selosDetalhes.tn1Value.toFixed(2)}` : ""})
+                                </span>
+                              ) : (
+                                <span>
+                                  Taxa do Tribunal de Justiça ({resultado.somaSelos > 0 ? `${Math.round(resultado.somaSelos / (config.taxaSeloFixoReais / 2))} selos de R$ ${(config.taxaSeloFixoReais / 2).toFixed(2)}` : "sem selos"})
+                                </span>
+                              )}
                             </span>
                           </div>
                         </div>
