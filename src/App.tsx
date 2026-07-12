@@ -26,7 +26,7 @@ import {
   Pencil
 } from "lucide-react";
 
-import { BemCadastrado, ConfigCustas, ClienteDados } from "./types";
+import { BemCadastrado, ConfigCustas, ClienteDados, ItemAdicional } from "./types";
 import {
   ATOS_FIXOS_PR,
   DEFAULT_VRC_RATE,
@@ -161,6 +161,11 @@ export default function App() {
   const [novoBemFracaoFunrejus, setNovoBemFracaoFunrejus] = useState<string>("100");
   const [novoBemIsGaragemAutonoma, setNovoBemIsGaragemAutonoma] = useState<boolean>(false);
 
+  const [incluirItensAdicionais, setIncluirItensAdicionais] = useState<boolean>(false);
+  const [itensAdicionais, setItensAdicionais] = useState<ItemAdicional[]>([]);
+  const [novoItemAdicionalNome, setNovoItemAdicionalNome] = useState<string>("");
+  const [novoItemAdicionalValor, setNovoItemAdicionalValor] = useState<string>("");
+
   // Estado para erros de formulário
   const [formErro, setFormErro] = useState<string>("");
 
@@ -183,8 +188,8 @@ export default function App() {
   }, [config, tipoEscritura, quantidadeFalecidos, percentuaisFalecidos, globalAtaSubtipo, globalAtaPaginas]);
 
   const resultado = useMemo(() => {
-    return calcularResultados(bens, configComAto, calculoIndividualizado);
-  }, [bens, configComAto, calculoIndividualizado]);
+    return calcularResultados(bens, configComAto, calculoIndividualizado, incluirItensAdicionais ? itensAdicionais : undefined);
+  }, [bens, configComAto, calculoIndividualizado, incluirItensAdicionais, itensAdicionais]);
 
   // --- COMPORTAMENTOS ---
   const handleAdicionarBem = (e: React.FormEvent) => {
@@ -278,6 +283,31 @@ export default function App() {
 
   const handleRemoverBem = (id: string) => {
     setBens(bens.filter((b) => b.id !== id));
+  };
+
+  const handleAdicionarItemAdicional = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!novoItemAdicionalNome.trim()) {
+      return;
+    }
+    const valorNum = parseFloat(novoItemAdicionalValor.replace(/\./g, "").replace(",", ".")) || 0;
+    if (valorNum <= 0) {
+      return;
+    }
+    
+    const novoItem: ItemAdicional = {
+      id: crypto.randomUUID(),
+      descricao: novoItemAdicionalNome.trim(),
+      valor: valorNum,
+    };
+    
+    setItensAdicionais([...itensAdicionais, novoItem]);
+    setNovoItemAdicionalNome("");
+    setNovoItemAdicionalValor("");
+  };
+
+  const handleRemoverItemAdicional = (id: string) => {
+    setItensAdicionais(itensAdicionais.filter((i) => i.id !== id));
   };
 
   const handleResetarConfig = () => {
@@ -1014,6 +1044,100 @@ export default function App() {
             </section>
           </>
         )}
+
+            {/* CARD 5: VALORES ADICIONAIS */}
+            <section className="bg-white rounded-none border border-slate-200 p-6 shadow-xs" id="card-valores-adicionais">
+              <div className="border-l-4 border-slate-900 pl-4 mb-5 flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-slate-600" />
+                  Valores Adicionais
+                </h2>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="chk-incluir-adicionais"
+                    checked={incluirItensAdicionais}
+                    onChange={(e) => setIncluirItensAdicionais(e.target.checked)}
+                    className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-900 cursor-pointer"
+                  />
+                  <label htmlFor="chk-incluir-adicionais" className="text-[10px] font-bold text-slate-600 uppercase cursor-pointer">
+                    Habilitar
+                  </label>
+                </div>
+              </div>
+
+              {incluirItensAdicionais && (
+                <div className="space-y-4">
+                  <form onSubmit={handleAdicionarItemAdicional} className="bg-slate-50 p-4 border border-slate-200 flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição</label>
+                      <input
+                        type="text"
+                        value={novoItemAdicionalNome}
+                        onChange={(e) => setNovoItemAdicionalNome(e.target.value)}
+                        placeholder="Ex: Certidões, Diligência..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-none text-sm focus:outline-hidden focus:border-slate-900 bg-white"
+                      />
+                    </div>
+                    <div className="w-full sm:w-1/3">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor (R$)</label>
+                      <input
+                        type="text"
+                        value={novoItemAdicionalValor}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "");
+                          if (!digits) {
+                            setNovoItemAdicionalValor("");
+                            return;
+                          }
+                          const num = parseFloat(digits) / 100;
+                          const formatted = new Intl.NumberFormat('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          }).format(num);
+                          setNovoItemAdicionalValor(formatted);
+                        }}
+                        placeholder="Ex: 50,00"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-none text-sm font-mono focus:outline-hidden focus:border-slate-900 bg-white text-right"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="submit"
+                        className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-none transition-colors h-[38px] flex items-center justify-center cursor-pointer"
+                        disabled={!novoItemAdicionalNome.trim() || !novoItemAdicionalValor.trim()}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </form>
+
+                  {itensAdicionais.length > 0 && (
+                    <div className="space-y-2 mt-4">
+                      {itensAdicionais.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-none text-sm">
+                          <span className="font-medium text-slate-700">{item.descricao}</span>
+                          <div className="flex items-center gap-4">
+                            <span className="font-mono font-bold text-slate-900">{formatarMoeda(item.valor)}</span>
+                            <button
+                              onClick={() => handleRemoverItemAdicional(item.id)}
+                              className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                              title="Remover item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between p-3 bg-slate-100 border border-slate-200 rounded-none text-sm font-bold">
+                        <span className="uppercase tracking-wide text-xs text-slate-600">Total Adicionais</span>
+                        <span className="font-mono text-slate-900">{formatarMoeda(itensAdicionais.reduce((s, i) => s + i.valor, 0))}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
           </div>
 
           {/* ================= COLUNA DIREITA: MEMORANDO E RESULTADO (7/12 cols) ================= */}
@@ -1389,6 +1513,22 @@ export default function App() {
                          <span className="font-mono font-extrabold text-amber-950">{formatarMoeda(resultado.somaFunrejus)}</span>
                        </div>
                      </div>
+
+                     {/* Item 8: Valores Adicionais */}
+                     {resultado.somaItensAdicionais && resultado.somaItensAdicionais > 0 ? (
+                       <div className="flex items-center justify-between p-4 rounded-none border border-slate-250 bg-slate-50">
+                         <div className="flex items-center gap-3">
+                           <div className="w-3 h-3 bg-slate-400 rounded-none shrink-0"></div>
+                           <div>
+                             <span className="text-xs font-bold text-slate-800 block uppercase tracking-wide">Valores Adicionais (Isentos)</span>
+                             <span className="text-[10px] text-slate-500 block font-mono">Taxas complementares (certidões, etc.)</span>
+                           </div>
+                         </div>
+                         <div className="text-right">
+                           <span className="font-mono font-bold text-slate-900">{formatarMoeda(resultado.somaItensAdicionais)}</span>
+                         </div>
+                       </div>
+                     ) : null}
                   </div>
                 </div>
               )}

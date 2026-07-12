@@ -1,4 +1,4 @@
-import { BemCadastrado, ConfigCustas, ResultadoCalculo, ResultadoItem } from "../types";
+import { BemCadastrado, ConfigCustas, ResultadoCalculo, ResultadoItem, ItemAdicional } from "../types";
 import { calcularVrcEscrituraValor, ATOS_FIXOS_PR } from "../data/tabelaPR";
 
 /**
@@ -30,7 +30,8 @@ export function arredondarABNT(valor: number, decimais: number = 2): number {
 export function calcularResultados(
   bens: BemCadastrado[],
   config: ConfigCustas,
-  calculoIndividualizado: boolean
+  calculoIndividualizado: boolean,
+  itensAdicionais?: ItemAdicional[]
 ): ResultadoCalculo {
   const itens: ResultadoItem[] = [];
 
@@ -383,7 +384,10 @@ export function calcularResultados(
   const somaFunrejus = itens.reduce((sum, item) => sum + item.funrejus, 0);
   const somaSelos = itens.reduce((sum, item) => sum + item.selo, 0);
   const somaDistrib = itens.reduce((sum, item) => sum + item.distrib, 0);
-  const totalGeral = itens.reduce((sum, item) => sum + item.total, 0);
+  
+  const somaItensAdicionais = itensAdicionais ? itensAdicionais.reduce((sum, item) => sum + item.valor, 0) : 0;
+  
+  const totalGeral = itens.reduce((sum, item) => sum + item.total, 0) + somaItensAdicionais;
 
   return {
     itens,
@@ -398,6 +402,8 @@ export function calcularResultados(
     somaSelos,
     somaDistrib,
     totalGeral,
+    itensAdicionais,
+    somaItensAdicionais,
   };
 }
 

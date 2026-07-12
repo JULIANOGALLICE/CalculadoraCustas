@@ -205,7 +205,8 @@ export function gerarPdfCliente(
   // Caixa consolidada de valores
   doc.setDrawColor(220, 224, 230);
   doc.setFillColor(252, 252, 253);
-  doc.rect(marginX, currentY, 180, 51, "FD");
+  const boxHeight = (resultado.somaItensAdicionais && resultado.somaItensAdicionais > 0) ? 58 : 51;
+  doc.rect(marginX, currentY, 180, boxHeight, "FD");
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
@@ -242,11 +243,18 @@ export function gerarPdfCliente(
   doc.text(`6. FUNREJUS (${config.funrejusPct.toFixed(2)}% sobre o Valor Declarado dos Bens):`, colValX1, currentY + 41);
   doc.text(formatarMoeda(resultado.somaFunrejus), colValX2, currentY + 41);
 
+  let additionalY = 0;
+  if (resultado.somaItensAdicionais && resultado.somaItensAdicionais > 0) {
+    additionalY = 7;
+    doc.text("7. Valores Adicionais (Certidões, Expediente, etc.):", colValX1, currentY + 41 + additionalY);
+    doc.text(formatarMoeda(resultado.somaItensAdicionais), colValX2, currentY + 41 + additionalY);
+  }
+
   // Linha divisória interna da caixa de resumo
   doc.setDrawColor(200, 200, 200);
-  doc.line(marginX + 2, currentY + 45, 195 - 2, currentY + 45);
+  doc.line(marginX + 2, currentY + 45 + additionalY, 195 - 2, currentY + 45 + additionalY);
 
-  currentY += 51;
+  currentY += 51 + additionalY;
 
   // Caixa de Total Geral Destacada
   doc.setFillColor(15, 23, 42); // Slate 900 #0F172A

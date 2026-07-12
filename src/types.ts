@@ -73,6 +73,14 @@ export interface ResultadoCalculo {
     tn1Count: number;
     tn1Value: number;
   };
+  itensAdicionais?: ItemAdicional[];
+  somaItensAdicionais?: number;
+}
+
+export interface ItemAdicional {
+  id: string;
+  descricao: string;
+  valor: number;
 }
 
 export interface ClienteDados {
