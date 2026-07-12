@@ -247,7 +247,8 @@ export default function App() {
   const iniciarEdicaoBem = (bem: BemCadastrado) => {
     setEditandoBemId(bem.id);
     setNovoBemNome(bem.nome);
-    setNovoBemValor(bem.valor > 0 ? bem.valor.toString() : ""); // Pode usar formatter dps
+    const val = bem.valor > 0 ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(bem.valor) : "";
+    setNovoBemValor(val);
     setNovoBemTipoAto(bem.tipoAto);
     if (bem.atoFixoId) setNovoBemAtoFixoId(bem.atoFixoId);
     if (bem.customVrc) setNovoBemCustomVrc(bem.customVrc.toString());
@@ -681,8 +682,17 @@ export default function App() {
                             type="text"
                             value={novoBemValor}
                             onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9,.]/g, "");
-                              setNovoBemValor(val);
+                              const digits = e.target.value.replace(/\D/g, "");
+                              if (!digits) {
+                                setNovoBemValor("");
+                                return;
+                              }
+                              const num = parseFloat(digits) / 100;
+                              const formatted = new Intl.NumberFormat('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                              }).format(num);
+                              setNovoBemValor(formatted);
                             }}
                             className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-none text-sm font-mono font-bold focus:outline-hidden focus:border-slate-900 focus:bg-white transition-all"
                             placeholder="Ex: 250.000,00"

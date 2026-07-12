@@ -2,11 +2,29 @@ import { BemCadastrado, ConfigCustas, ResultadoCalculo, ResultadoItem } from "..
 import { calcularVrcEscrituraValor, ATOS_FIXOS_PR } from "../data/tabelaPR";
 
 /**
- * Trunca um valor em 2 casas decimais (arredondamento para baixo)
- * Ex: 55.0896 -> 55.08
+ * Arredondamento segundo a norma ABNT NBR 5891
  */
-export function truncar2Decimais(valor: number): number {
-  return Math.floor(Math.round(valor * 1000000) / 10000) / 100;
+export function arredondarABNT(valor: number, decimais: number = 2): number {
+  const multiplicador = Math.pow(10, decimais);
+  const valorMultiplicado = Math.round(valor * multiplicador * 10000000) / 10000000;
+  const valorInteiro = Math.floor(valorMultiplicado);
+  const fracao = valorMultiplicado - valorInteiro;
+
+  let resultado;
+
+  if (fracao < 0.5) {
+    resultado = valorInteiro;
+  } else if (fracao > 0.5) {
+    resultado = valorInteiro + 1;
+  } else {
+    if (valorInteiro % 2 === 0) {
+      resultado = valorInteiro;
+    } else {
+      resultado = valorInteiro + 1;
+    }
+  }
+
+  return resultado / multiplicador;
 }
 
 export function calcularResultados(
@@ -38,10 +56,10 @@ export function calcularResultados(
       tipoAtoNome = `Ata Notarial Externa (${paginas} fl.)`;
     }
 
-    const emolumentosReais = Math.round(emolumentosVrc * config.vrcRate * 100) / 100;
+    const emolumentosReais = arredondarABNT(emolumentosVrc * config.vrcRate);
     const funarpen = 0;
-    const fadep = truncar2Decimais(emolumentosReais * (config.fadepPct / 100));
-    const iss = truncar2Decimais(emolumentosReais * (config.issPct / 100));
+    const fadep = arredondarABNT(emolumentosReais * (config.fadepPct / 100));
+    const iss = arredondarABNT(emolumentosReais * (config.issPct / 100));
 
     // Selo: 1 para escritura, 1 para o traslado de 8 reais cada e um selo de 1,00 a cada pagina adicional
     const custoPorSelo = config.taxaSeloFixoReais / 2; // R$ 8,00 por padrão
@@ -156,14 +174,14 @@ export function calcularResultados(
       }
       
       const emolumentosVrc = baseVrcTotal * (percentual / 100);
-      const emolumentosReais = Math.round(emolumentosVrc * config.vrcRate * 100) / 100;
+      const emolumentosReais = arredondarABNT(emolumentosVrc * config.vrcRate);
       
       const funarpen = 0;
-      const fadep = truncar2Decimais(emolumentosReais * (config.fadepPct / 100));
-      const iss = truncar2Decimais(emolumentosReais * (config.issPct / 100));
+      const fadep = arredondarABNT(emolumentosReais * (config.fadepPct / 100));
+      const iss = arredondarABNT(emolumentosReais * (config.issPct / 100));
       
       // Funrejus é calculado sobre o valor real do imóvel considerando a fração ideal do FUNREJUS (limitado ao teto)
-      const funrejusBase = truncar2Decimais((bem.valor * ((bem.fracaoFunrejus ?? 100) / 100)) * (config.funrejusPct / 100));
+      const funrejusBase = arredondarABNT((bem.valor * ((bem.fracaoFunrejus ?? 100) / 100)) * (config.funrejusPct / 100));
       const funrejus = Math.min(funrejusBase, config.tetoFunrejusReais ?? 8076.67);
       
       // Selo Digital: R$ 8,00 por selo (equivalente a 50% do custo base de R$ 16,00).
@@ -215,13 +233,13 @@ export function calcularResultados(
         valoresTransmitidosStr.push(`${pctFalecido}%`);
       }
       
-      const emolumentosReais = Math.round(emolumentosVrc * config.vrcRate * 100) / 100;
+      const emolumentosReais = arredondarABNT(emolumentosVrc * config.vrcRate);
 
       const funarpen = 0;
-      const fadep = truncar2Decimais(emolumentosReais * (config.fadepPct / 100));
-      const iss = truncar2Decimais(emolumentosReais * (config.issPct / 100));
+      const fadep = arredondarABNT(emolumentosReais * (config.fadepPct / 100));
+      const iss = arredondarABNT(emolumentosReais * (config.issPct / 100));
       // Funrejus usa fracaoFunrejus (default 100) (limitado ao teto)
-      const funrejusBase = truncar2Decimais((bem.valor * ((bem.fracaoFunrejus ?? 100) / 100)) * (config.funrejusPct / 100));
+      const funrejusBase = arredondarABNT((bem.valor * ((bem.fracaoFunrejus ?? 100) / 100)) * (config.funrejusPct / 100));
       const funrejus = Math.min(funrejusBase, config.tetoFunrejusReais ?? 8076.67);
       const selo = config.taxaSeloFixoReais;
       const distrib = config.taxaDistribReais;
@@ -271,10 +289,10 @@ export function calcularResultados(
       }
     }
 
-    const emolumentosReais = Math.round(emolumentosVrc * config.vrcRate * 100) / 100;
+    const emolumentosReais = arredondarABNT(emolumentosVrc * config.vrcRate);
     const funarpen = 0;
-    const fadep = truncar2Decimais(emolumentosReais * (config.fadepPct / 100));
-    const iss = truncar2Decimais(emolumentosReais * (config.issPct / 100));
+    const fadep = arredondarABNT(emolumentosReais * (config.fadepPct / 100));
+    const iss = arredondarABNT(emolumentosReais * (config.issPct / 100));
     
     // Atos fixos ou sem valor geralmente não incidem FUNREJUS de transferência (0.2% de imóvel)
     const funrejus = 0;
@@ -324,10 +342,10 @@ export function calcularResultados(
       tipoAtoNome = `Ata Notarial Externa (${paginas} fl.)`;
     }
 
-    const emolumentosReais = Math.round(emolumentosVrc * config.vrcRate * 100) / 100;
+    const emolumentosReais = arredondarABNT(emolumentosVrc * config.vrcRate);
     const funarpen = 0;
-    const fadep = truncar2Decimais(emolumentosReais * (config.fadepPct / 100));
-    const iss = truncar2Decimais(emolumentosReais * (config.issPct / 100));
+    const fadep = arredondarABNT(emolumentosReais * (config.fadepPct / 100));
+    const iss = arredondarABNT(emolumentosReais * (config.issPct / 100));
 
     // Selo: 1 para escritura, 1 para o traslado de 8 reais cada e um selo de 1,00 a cada pagina adicional
     const custoPorSelo = config.taxaSeloFixoReais / 2; // R$ 8,00 por padrão
